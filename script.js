@@ -1,26 +1,14 @@
 // ========================================
-// 0. Firebase 雲端設定 (npm install firebase)
+// 0. Firebase 雲端設定 (請換成你自己的)
 // ========================================
 
 const firebaseConfig = {
-    // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDzRYj5o3mchKTJ57KDkF8oX5VxlO2FmZ4",
-  authDomain: "anime-station-263ca.firebaseapp.com",
-  databaseURL: "https://anime-station-263ca-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "anime-station-263ca",
-  storageBucket: "anime-station-263ca.firebasestorage.app",
-  messagingSenderId: "429246111621",
-  appId: "1:429246111621:web:8c0e728f6cef8440ebaeec"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 
 // 初始化 Firebase
