@@ -1,15 +1,14 @@
 // ========================================
-// 0. Firebase 雲端設定 (請換成你自己的)
+// 0. Firebase 雲端設定
 // ========================================
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDzRYj5o3mchKTJ57KDkF8oX5VxlO2FmZ4",
-  authDomain: "anime-station-263ca.firebaseapp.com",
-  databaseURL: "https://anime-station-263ca-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "anime-station-263ca",
-  storageBucket: "anime-station-263ca.firebasestorage.app",
-  messagingSenderId: "429246111621",
-  appId: "1:429246111621:web:8c0e728f6cef8440ebaeec"
+    apiKey: "AIzaSyDzRYj5o3mchKTJ57KDkF8oX5VxlO2FmZ4",
+    authDomain: "anime-station-263ca.firebaseapp.com",
+    projectId: "anime-station-263ca",
+    storageBucket: "anime-station-263ca.firebasestorage.app",
+    messagingSenderId: "429246111621",
+    appId: "1:429246111621:web:8c0e728f6cef8440ebaeec"
 };
 
 // 初始化 Firebase
@@ -34,19 +33,18 @@ let animeCollection = [];
 // ========================================
 // 2. 即時監聽雲端資料 (共編的核心！)
 // ========================================
-// 只要你或朋友任何人修改了資料，這裡會「自動」抓取最新資料並重新渲染畫面
 db.collection("animes").onSnapshot((snapshot) => {
     animeCollection = [];
     snapshot.forEach((doc) => {
         animeCollection.push({
-            id: doc.id, // Firestore 的專屬 ID
+            id: doc.id,
             ...doc.data()
         });
     });
     renderAnimeList();
 }, (error) => {
     console.error("讀取雲端資料失敗：", error);
-    alert("讀取雲端資料時發生問題。");
+    alert("讀取雲端資料時發生問題，請檢查網路或 Firebase 設定。");
 });
 
 // ========================================
@@ -94,10 +92,11 @@ if (addButton) {
                 titleInput.value = "";
                 ratingInput.value = "0";
                 imageInput.value = "";
+                console.log("新增成功！");
             })
             .catch((error) => {
                 console.error("新增失敗：", error);
-                alert("新增失敗，請檢查網路連線。");
+                alert("新增失敗，請檢查網路連線或資料庫權限。");
             });
     });
 }
@@ -171,7 +170,7 @@ function renderAnimeList() {
 }
 
 // ========================================
-// 5. 編輯動漫 (依據觀看順序尋找並更新雲端)
+// 5. 編輯動漫
 // ========================================
 
 function startEditAnime(number) {
@@ -215,7 +214,6 @@ function startEditAnime(number) {
     const newImage = prompt("請輸入圖片網址（可留空）：", anime.image || "");
     if (newImage === null) return;
 
-    // 更新雲端資料庫
     db.collection("animes").doc(anime.id).update({
         number: parsedNumber,
         title: newTitle.trim(),
@@ -232,7 +230,7 @@ function startEditAnime(number) {
 }
 
 // ========================================
-// 6. 刪除動漫 (依據觀看順序從雲端刪除)
+// 6. 刪除動漫
 // ========================================
 
 function deleteAnime(number) {
@@ -243,10 +241,9 @@ function deleteAnime(number) {
         return;
     }
 
-    const confirmed = confirm(`確定要刪除「${anime.title}」嗎？\n此操作無法直接復原。`);
+    const confirmed = confirm(`確定要刪除「${anime.title}」嗎？`);
     if (!confirmed) return;
 
-    // 從 Firestore 刪除文件
     db.collection("animes").doc(anime.id).delete()
         .then(() => {
             console.log("刪除成功");
