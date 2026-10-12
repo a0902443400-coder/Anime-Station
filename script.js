@@ -3,12 +3,13 @@
 // ========================================
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDzRYj5o3mchKTJ57KDkF8oX5VxlO2FmZ4",
+  authDomain: "anime-station-263ca.firebaseapp.com",
+  databaseURL: "https://anime-station-263ca-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "anime-station-263ca",
+  storageBucket: "anime-station-263ca.firebasestorage.app",
+  messagingSenderId: "429246111621",
+  appId: "1:429246111621:web:8c0e728f6cef8440ebaeec"
 };
 
 // 初始化 Firebase
