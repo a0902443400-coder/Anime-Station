@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待看清單 - 我的動漫收藏庫</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase 核心與 Firestore SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <!-- 導覽列 -->
+    <nav class="navbar">
+        <a href="index.html">首頁</a>
+        <a href="index.html#catalog">動漫目錄</a>
+        <a href="index.html#statistics">動漫統計</a>
+        <a href="watchlist.html" style="color: #b9a1ff;">待看清單</a>
+        <a href="random.html">隨機抽籤</a>
+    </nav>
+
+    <main>
+        <section class="catalog" style="border-top: none; padding-top: 20px;">
+            <h2>📥 待看清單管理</h2>
+            <p>在這裡新增想看的動漫，或直接搜尋清單中的作品！</p>
+
+            <!-- 新增與搜尋整合區塊 -->
+            <div style="display: flex; flex-direction: column; gap: 15px; max-width: 500px; margin: 20px auto 30px auto; background: #1c1424; padding: 20px; border-radius: 14px; border: 1px solid #5d3880;">
+                
+                <!-- 新增表單 -->
+                <form id="add-watchlist-form" style="display: flex; flex-direction: column; gap: 10px;">
+                    <h3 style="color: #d1b3ff; margin: 0 0 5px 0; font-size: 18px;">➕ 新增待看動漫</h3>
+                    <div>
+                        <input type="text" id="new-title" placeholder="請輸入動漫名稱..." required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #7c52c4; background: #110c1c; color: white; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <input type="url" id="new-image" placeholder="封面圖片網址 " style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #7c52c4; background: #110c1c; color: white; box-sizing: border-box;">
+                    </div>
+                    <button type="submit" style="background: linear-gradient(135deg, #00e5ff, #8a2be2); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: filter 0.2s;">📥 加入清單</button>
+                </form>
+
+                <hr style="border: none; border-top: 1px solid #3f285c; margin: 5px 0;">
+
+                <!-- 搜尋列 -->
+                <div>
+                    <h3 style="color: #d1b3ff; margin: 0 0 8px 0; font-size: 18px;">🔍 搜尋待看動漫</h3>
+                    <div class="anime-search" style="margin-top: 0;">
+                        <span class="search-icon">🔍</span>
+                        <input
+                            type="text"
+                            id="search-watchlist"
+                            placeholder="輸入名稱快速搜尋..."
+                            autocomplete="off"
+                        >
+                        <button id="clear-watchlist-search" type="button">清除</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 待看清單列表 -->
+            <div id="watchlist-container" class="anime-list"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>我的動漫收藏庫 © 2026</p>
+    </footer>
+
+    <script>
+        // 初始化 Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDzRYj5o3mchKTJ57KDkF8oX5VxlO2FmZ4",
+            authDomain: "anime-station-263ca.firebaseapp.com",
+            projectId: "anime-station-263ca",
+            storageBucket: "anime-station-263ca.firebasestorage.app",
+            messagingSenderId: "429246111621",
+            appId: "1:429246111621:web:8c0e728f6cef8440ebaeec"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const watchlistContainer = document.getElementById("watchlist-container");
+        const searchWatchlistInput = document.getElementById("search-watchlist");
+        const clearWatchlistSearchBtn = document.getElementById("clear-watchlist-search");
+        const addWatchlistForm = document.getElementById("add-watchlist-form");
+        const newTitleInput = document.getElementById("new-title");
+        const newImageInput = document.getElementById("new-image");
+
+        let watchlistData = [];
+
+        // 即時監聽 watchlist 集合
+        db.collection("watchlist").onSnapshot((snapshot) => {
+            watchlistData = [];
+            snapshot.forEach((doc) => {
+                watchlistData.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            renderWatchlist();
+        }, (error) => {
+            console.error("讀取待看清單失敗：", error);
+        });
+
+        function renderWatchlist() {
+            if (!watchlistContainer) return;
+            watchlistContainer.innerHTML = "";
+
+            const keyword = searchWatchlistInput ? searchWatchlistInput.value.trim().toLowerCase() : "";
+
+            const filtered = watchlistData.filter(item => {
+                return String(item.title || "").toLowerCase().includes(keyword);
+            });
+
+            if (filtered.length === 0) {
+                const msg = document.createElement("p");
+                msg.className = "no-results";
+                msg.textContent = keyword ? "找不到符合的待看動漫 😢" : "目前待看清單是空的，快透過上方表單新增吧！";
+                watchlistContainer.appendChild(msg);
+                return;
+            }
+
+            filtered.forEach(item => {
+                const card = document.createElement("article");
+                card.className = "anime-card";
+
+                const img = document.createElement("img");
+                img.alt = item.title + "的封面";
+                img.className = "anime-cover";
+                if (item.image) {
+                    img.onerror = () => { img.style.display = "none"; };
+                    img.src = item.image;
+                } else {
+                    img.style.display = "none";
+                }
+
+                const title = document.createElement("h3");
+                title.textContent = item.title;
+
+                card.appendChild(img);
+                card.appendChild(title);
+
+                const actionDiv = document.createElement("div");
+                actionDiv.className = "anime-actions";
+
+                const moveToCatalogBtn = document.createElement("button");
+                moveToCatalogBtn.textContent = "✨ 移至收藏";
+                moveToCatalogBtn.style.background = "#3c345c";
+                moveToCatalogBtn.style.border = "1px solid #7c68af";
+                moveToCatalogBtn.style.color = "#e4dcff";
+                moveToCatalogBtn.style.width = "auto";
+                moveToCatalogBtn.style.padding = "5px 12px";
+                moveToCatalogBtn.style.borderRadius = "7px";
+                moveToCatalogBtn.style.cursor = "pointer";
+                moveToCatalogBtn.style.fontSize = "13px";
+                moveToCatalogBtn.title = "補填觀看順序並移至正式收藏";
+
+                moveToCatalogBtn.addEventListener("click", async () => {
+                    const numStr = prompt(`請輸入「${item.title}」的觀看順序（例如：1 或 1.2）：`);
+                    if (numStr === null || numStr.trim() === "") return;
+
+                    const num = Number(numStr);
+                    if (isNaN(num) || num <= 0) {
+                        alert("請輸入大於 0 的有效數字！");
+                        return;
+                    }
+
+                    const checkSnapshot = await db.collection("animes").where("number", "==", num).get();
+                    if (!checkSnapshot.empty) {
+                        alert("這個觀看順序已經被其他正式收藏使用了！");
+                        return;
+                    }
+
+                    try {
+                        await db.collection("animes").add({
+                            number: num,
+                            title: item.title,
+                            rating: item.rating || 0,
+                            image: item.image || ""
+                        });
+
+                        await db.collection("watchlist").doc(item.id).delete();
+                        alert("成功移至正式動漫收藏！");
+                    } catch (err) {
+                        console.error("移動失敗：", err);
+                        alert("操作失敗，請稍後再試。");
+                    }
+                });
+
+                actionDiv.appendChild(moveToCatalogBtn);
+                card.appendChild(actionDiv);
+
+                watchlistContainer.appendChild(card);
+            });
+        }
+
+        // 表單提交：新增待看動漫
+        if (addWatchlistForm) {
+            addWatchlistForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const title = newTitleInput.value.trim();
+                const image = newImageInput.value.trim();
+
+                if (!title) return;
+
+                try {
+                    await db.collection("watchlist").add({
+                        title: title,
+                        image: image,
+                        rating: 0
+                    });
+
+                    newTitleInput.value = "";
+                    newImageInput.value = "";
+                    alert(`成功將「${title}」加入待看清單！`);
+                } catch (err) {
+                    console.error("新增待看失敗：", err);
+                    alert("新增失敗，請稍後再試。");
+                }
+            });
+        }
+
+        if (searchWatchlistInput) {
+            searchWatchlistInput.addEventListener("input", renderWatchlist);
+        }
+
+        if (clearWatchlistSearchBtn) {
+            clearWatchlistSearchBtn.addEventListener("click", () => {
+                if (searchWatchlistInput) {
+                    searchWatchlistInput.value = "";
+                    renderWatchlist();
+                }
+            });
+        }
+
+        // 待看清單右下角管理選單（刪除功能）
+        const managementPanel = document.createElement("div");
+        managementPanel.id = "management-panel";
+
+        const managementToggle = document.createElement("button");
+        managementToggle.type = "button";
+        managementToggle.id = "management-toggle";
+        managementToggle.textContent = "⚙️";
+        managementToggle.title = "待看清單管理";
+
+        const deleteWatchlistButton = document.createElement("button");
+        deleteWatchlistButton.type = "button";
+        deleteWatchlistButton.textContent = "🗑️ 刪除待看動漫";
+        deleteWatchlistButton.id = "manage-delete";
+
+        const managementOptions = document.createElement("div");
+        managementOptions.id = "management-options";
+        managementOptions.style.display = "none";
+
+        managementOptions.appendChild(deleteWatchlistButton);
+        managementPanel.appendChild(managementOptions);
+        managementPanel.appendChild(managementToggle);
+        document.body.appendChild(managementPanel);
+
+        managementToggle.addEventListener("click", function () {
+            managementOptions.style.display = managementOptions.style.display === "none" ? "flex" : "none";
+        });
+
+        deleteWatchlistButton.addEventListener("click", async function () {
+            const animeTitleInput = prompt("請輸入要刪除的「動漫名稱」：");
+            if (animeTitleInput === null || animeTitleInput.trim() === "") return;
+
+            const targetName = animeTitleInput.trim().toLowerCase();
+            const foundItem = watchlistData.find(item => String(item.title).trim().toLowerCase() === targetName);
+
+            if (!foundItem) {
+                alert("在待看清單中找不到這部動漫！");
+                return;
+            }
+
+            const confirmed = confirm(`確定要從待看清單刪除「${foundItem.title}」嗎？`);
+            if (!confirmed) return;
+
+            try {
+                await db.collection("watchlist").doc(foundItem.id).delete();
+                alert("刪除成功！");
+            } catch (error) {
+                console.error("刪除失敗：", error);
+                alert("刪除失敗，請稍後再試。");
+            }
+
+            managementOptions.style.display = "none";
+        });
+    </script>
+</body>
+</html>

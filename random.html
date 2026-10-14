@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨機抽籤 - 我的動漫收藏庫</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase 核心與 Firestore SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        .random-page-container {
+            max-width: 600px;
+            margin: 50px auto;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .picker-box {
+            background: linear-gradient(145deg, #2b1714, #170b09);
+            border: 1px solid #7a2d22;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            margin-top: 30px;
+        }
+
+        .picker-box h2 {
+            color: #ffaa71;
+            margin-top: 0;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .picker-box p {
+            color: #cc9b8c;
+            margin-bottom: 25px;
+        }
+
+        /* 抽籤按鈕上方的裝飾圖片樣式（已調整為 520px） */
+        .picker-banner-img {
+            width: 100%;
+            max-height: 520px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid #7a2d22;
+            margin-bottom: 25px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 保留原本的橘紅爆裂魔法按鈕樣式 */
+        .big-draw-btn {
+            background: linear-gradient(135deg, #ff4500, #b22222);
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 15px 40px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 69, 0, 0.4);
+            transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+        }
+
+        .big-draw-btn:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.15);
+            box-shadow: 0 10px 25px rgba(255, 69, 0, 0.6);
+        }
+
+        /* 七彩魔力暴走全螢幕過場層背景 */
+        #video-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.35) 0%, rgba(138, 43, 226, 0.65) 45%, rgba(255, 0, 127, 0.5) 70%, rgba(10, 5, 20, 0.98) 95%);
+            background-size: 300% 300%;
+            animation: rainbowMagicBg 4s ease infinite;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes rainbowMagicBg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #video-overlay.active {
+            display: flex;
+        }
+
+        /* 影片外圍的七彩炫光交織外框 */
+        .video-container {
+            padding: 18px;
+            background: linear-gradient(145deg, #221430, #0a0412);
+            border: 3px solid transparent;
+            border-image: linear-gradient(135deg, #00e5ff, #ffd700, #ff007f, #8a2be2) 1;
+            border-radius: 22px;
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.6), 
+                        0 0 90px rgba(255, 0, 127, 0.5), 
+                        inset 0 0 35px rgba(255, 215, 0, 0.4);
+            animation: rainbowBoxGlow 0.6s infinite alternate;
+        }
+
+        @keyframes rainbowBoxGlow {
+            0% { 
+                transform: scale(0.98); 
+                box-shadow: 0 0 40px rgba(0, 229, 255, 0.6), 0 0 80px rgba(255, 0, 127, 0.4); 
+            }
+            100% { 
+                transform: scale(1.02); 
+                box-shadow: 0 0 60px rgba(255, 215, 0, 0.8), 0 0 110px rgba(138, 43, 226, 0.7); 
+            }
+        }
+
+        /* 放大版精緻影片尺寸 (780px) */
+        .domain-video {
+            width: 780px;
+            max-width: 92vw;
+            height: auto;
+            display: block;
+            border-radius: 12px;
+        }
+
+        /* 爆裂魔法標題文字 */
+        .video-title {
+            color: #ffffff;
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            margin-top: 25px;
+            text-shadow: 0 0 20px #ff4500, 0 0 40px #ff8c00;
+            animation: pulseText 0.3s infinite alternate;
+        }
+
+        @keyframes pulseText {
+            0% { transform: scale(0.97); }
+            100% { transform: scale(1.03); }
+        }
+
+        /* 結果卡片特效 */
+        #result-card {
+            display: none;
+            max-width: 480px;
+            margin: 30px auto 0 auto;
+            background: #1c100e;
+            border: 2px solid #e06d48;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 0 35px rgba(224, 109, 72, 0.4);
+            transform: scale(0.3) rotate(-5deg);
+            opacity: 0;
+        }
+
+        .genshin-reveal {
+            animation: gachaCardFlyIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes gachaCardFlyIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) rotate(-8deg) translateY(50px);
+                filter: brightness(2.5) blur(4px);
+            }
+            70% {
+                opacity: 1;
+                transform: scale(1.03) rotate(1deg) translateY(-5px);
+                filter: brightness(1.3) blur(0px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg) translateY(0);
+                filter: brightness(1) blur(0px);
+            }
+        }
+
+        .result-cover {
+            width: 100%;
+            height: 560px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #0f0706;
+            margin: 0 auto 15px auto;
+            display: block;
+        }
+
+        #result-title {
+            color: #ffede6;
+            font-size: 24px;
+            margin: 10px 0;
+            overflow-wrap: anywhere;
+        }
+
+        #result-rating {
+            color: #cc9b8c;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .result-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 10px 22px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, filter 0.2s;
+        }
+
+        .btn-redraw {
+            background: #3b1b16;
+            border: 1px solid #8c392b;
+            color: #ffccbc;
+        }
+
+        .btn-move {
+            background: linear-gradient(135deg, #ff4500, #b22222);
+            border: none;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 導覽列 -->
+    <nav class="navbar">
+        <a href="index.html">首頁</a>
+        <a href="index.html#catalog">動漫目錄</a>
+        <a href="index.html#statistics">動漫統計</a>
+        <a href="watchlist.html">待看清單</a>
+        <a href="random.html" style="color: #ffaa71;">隨機抽籤</a>
+    </nav>
+
+    <!-- 惠惠爆裂魔法影片過場層 -->
+    <div id="video-overlay">
+        <div class="video-container">
+            <video id="explosion-video" class="domain-video" src="megumin.mp4" playsinline></video>
+        </div>
+        <div class="video-title">💥 Explosion！！ ── 萬象灰燼！</div>
+    </div>
+
+    <main class="random-page-container">
+        <div class="picker-box">
+            <h2>🎲 選擇障礙救星</h2>
+            <p>從你的「待看清單」中隨機抽選一部作品，讓爆裂魔法決定一切！</p>
+
+            <!-- 按鈕上方的指定圖片 -->
+            <img id="picker-banner" src="https://image.tmdb.org/t/p/original/fddo8TUCQnnNr4JaKxvMW1O5O6s.jpg" alt="惠惠抽籤宣傳圖" class="picker-banner-img">
+
+            <button id="draw-btn" class="big-draw-btn" type="button">💥 【爆裂魔法】隨機抽籤</button>
+
+            <!-- 抽選結果卡片 -->
+            <div id="result-card">
+                <p style="color: #ff4500; font-weight: bold; margin-top: 0; font-size: 18px;">💥 爆裂歸於塵土・命運之作降臨！ 💥</p>
+                <img id="result-img" class="result-cover" src="" alt="動漫封面">
+                <h3 id="result-title">動漫名稱</h3>
+                <p id="result-rating"></p>
+
+                <div class="result-actions">
+                    <button id="redraw-btn" class="action-btn btn-redraw" type="button">🔄 再次詠唱</button>
+                    <button id="move-btn" class="action-btn btn-move" type="button">✨ 移至收藏</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>我的動漫收藏庫 © 2026</p>
+    </footer>
+
+    <script>
+        // 初始化 Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDzRYj5o3mchKTJ57KDkF8oX5VxlO2FmZ4",
+            authDomain: "anime-station-263ca.firebaseapp.com",
+            projectId: "anime-station-263ca",
+            storageBucket: "anime-station-263ca.firebasestorage.app",
+            messagingSenderId: "429246111621",
+            appId: "1:429246111621:web:8c0e728f6cef8440ebaeec"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let watchlistData = [];
+        let currentPickedItem = null;
+
+        db.collection("watchlist").onSnapshot((snapshot) => {
+            watchlistData = [];
+            snapshot.forEach((doc) => {
+                watchlistData.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+        }, (error) => {
+            console.error("讀取待看清單失敗：", error);
+        });
+
+        const drawBtn = document.getElementById("draw-btn");
+        const pickerBanner = document.getElementById("picker-banner");
+        const redrawBtn = document.getElementById("redraw-btn");
+        const moveBtn = document.getElementById("move-btn");
+        const resultCard = document.getElementById("result-card");
+        const resultImg = document.getElementById("result-img");
+        const resultTitle = document.getElementById("result-title");
+        const resultRating = document.getElementById("result-rating");
+        const videoOverlay = document.getElementById("video-overlay");
+        const explosionVideo = document.getElementById("explosion-video");
+
+        function playMeguminAnimation() {
+            if (watchlistData.length === 0) {
+                alert("目前「待看清單」是空的，請先新增一些想看的動漫吧！");
+                return;
+            }
+
+            drawBtn.style.display = "none";
+            if (pickerBanner) pickerBanner.style.display = "none";
+
+            resultCard.style.display = "none";
+            resultCard.classList.remove("genshin-reveal");
+
+            const randomIndex = Math.floor(Math.random() * watchlistData.length);
+            currentPickedItem = watchlistData[randomIndex];
+
+            if (currentPickedItem.image) {
+                resultImg.style.display = "block";
+                resultImg.src = currentPickedItem.image;
+                resultImg.onerror = () => { resultImg.style.display = "none"; };
+            } else {
+                resultImg.style.display = "none";
+            }
+
+            resultTitle.textContent = currentPickedItem.title;
+
+            const ratingNum = Number(currentPickedItem.rating);
+            if (ratingNum > 0) {
+                resultRating.textContent = "個人評分：" + "⭐".repeat(ratingNum);
+                resultRating.style.display = "block";
+            } else {
+                resultRating.textContent = "";
+                resultRating.style.display = "none";
+            }
+
+            videoOverlay.classList.add("active");
+            explosionVideo.currentTime = 0;
+            explosionVideo.play().catch(err => {
+                console.log("播放影片失敗：", err);
+            });
+        }
+
+        explosionVideo.addEventListener("ended", () => {
+            videoOverlay.classList.remove("active");
+            resultCard.style.display = "block";
+            void resultCard.offsetWidth;
+            resultCard.classList.add("genshin-reveal");
+        });
+
+        drawBtn.addEventListener("click", playMeguminAnimation);
+        redrawBtn.addEventListener("click", playMeguminAnimation);
+
+        moveBtn.addEventListener("click", async () => {
+            if (!currentPickedItem) return;
+
+            const numStr = prompt(`請輸入「${currentPickedItem.title}」的觀看順序（例如：1 或 1.2）：`);
+            if (numStr === null || numStr.trim() === "") return;
+
+            const num = Number(numStr);
+            if (isNaN(num) || num <= 0) {
+                alert("請輸入大於 0 的有效數字！");
+                return;
+            }
+
+            const checkSnapshot = await db.collection("animes").where("number", "==", num).get();
+            if (!checkSnapshot.empty) {
+                alert("這個觀看順序已經被其他正式收藏使用了！");
+                return;
+            }
+
+            try {
+                await db.collection("animes").add({
+                    number: num,
+                    title: currentPickedItem.title,
+                    rating: currentPickedItem.rating || 0,
+                    image: currentPickedItem.image || ""
+                });
+
+                await db.collection("watchlist").doc(currentPickedItem.id).delete();
+
+                alert("成功移至正式動漫收藏！");
+                resultCard.style.display = "none";
+                
+                drawBtn.style.display = "inline-block";
+                if (pickerBanner) pickerBanner.style.display = "block";
+            } catch (err) {
+                console.error("移動失敗：", err);
+                alert("操作失敗，請稍後再試。");
+            }
+        });
+    </script>
+</body>
+</html>

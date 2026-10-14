@@ -6,8 +6,8 @@
     <title>我的動漫收藏庫</title>
     <link rel="stylesheet" href="style.css">
     <!-- Firebase 核心與 Firestore SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
@@ -17,6 +17,8 @@
         <a href="#home">首頁</a>
         <a href="#catalog">動漫目錄</a>
         <a href="#statistics">動漫統計</a>
+        <a href="watchlist.html">待看清單</a>
+        <a href="random.html">隨機抽籤</a>
     </nav>
 
     <!-- 大型首頁橫幅 -->
@@ -48,18 +50,30 @@
                     <h3>動漫統計</h3>
                     <p>查看收藏數量與評分</p>
                 </a>
+
+                <a href="watchlist.html" class="menu-card">
+                    <span>📥</span>
+                    <h3>待看清單</h3>
+                    <p>查看還沒排順序的想看作品</p>
+                </a>
+
+                <!-- 新增的隨機抽籤卡片 -->
+                <a href="random.html" class="menu-card">
+                    <span>🎲</span>
+                    <h3>隨機抽籤</h3>
+                    <p>解決選擇障礙，隨機抽一部來看</p>
+                </a>
             </div>
         </section>
 
         <!-- 動漫收藏區 -->
         <section id="catalog" class="catalog">
             <h2>🎌 動漫收藏</h2>
-            <p>新增你看過的動畫，建立自己的收藏清單！</p>
 
             <div class="anime-form">
-                <input type="number" id="anime-number" placeholder="觀看順序，例如：1" min="1">
+                <!-- 觀看順序改為非必填，沒填就進待看清單 -->
+                <input type="number" id="anime-number" placeholder="觀看順序 " min="0" step="any">
                 <input type="text" id="anime-title" placeholder="動漫名稱，例如：刀劍神域">
-                <!-- 這裡已從 file 改成 url 網址輸入框 -->
                 <input type="url" id="anime-image" placeholder="請輸入圖片網址 (https://...)">
 
                 <select id="anime-rating">
@@ -96,14 +110,14 @@
 
             <div class="stats-container">
                 <div class="stats-card">
-                    <span class="stats-icon">🎌</span>
+                    <span class="stats-icon">📦</span>
                     <h3>收藏總數</h3>
                     <p id="total-anime">0 部</p>
                 </div>
 
                 <div class="stats-card">
-                    <span class="stats-icon">⭐</span>
-                    <h3>已評分作品</h3>
+                    <span class="stats-icon">✅</span>
+                    <h3>觀看完作品數</h3>
                     <p id="rated-anime">0 部</p>
                 </div>
 
@@ -114,8 +128,8 @@
                 </div>
 
                 <div class="stats-card">
-                    <span class="stats-icon">🏆</span>
-                    <h3>最高評分</h3>
+                    <span class="stats-icon">🔥</span>
+                    <h3>最多評分</h3>
                     <p id="highest-rating">尚無評分</p>
                 </div>
             </div>

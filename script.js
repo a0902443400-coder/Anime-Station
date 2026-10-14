@@ -29,9 +29,10 @@ const searchInput = document.getElementById("search-anime");
 const clearSearchButton = document.getElementById("clear-search");
 
 let animeCollection = [];
+let watchlistCollection = []; // 用於計算收藏總數（待看清單數量 + 這頁正式收藏數量）
 
 // ========================================
-// 2. 即時監聽雲端資料 (共編的核心！)
+// 2. 即時監聽雲端資料 (正式收藏清單 & 待看清單)
 // ========================================
 db.collection("animes").onSnapshot((snapshot) => {
     animeCollection = [];
@@ -47,34 +48,73 @@ db.collection("animes").onSnapshot((snapshot) => {
     alert("讀取雲端資料時發生問題，請檢查網路或 Firebase 設定。");
 });
 
+// 同步監聽待看清單以計算總數
+db.collection("watchlist").onSnapshot((snapshot) => {
+    watchlistCollection = [];
+    snapshot.forEach((doc) => {
+        watchlistCollection.push({
+            id: doc.id,
+            ...doc.data()
+        });
+    });
+    updateStatistics();
+}, (error) => {
+    console.error("讀取待看清單失敗：", error);
+});
+
 // ========================================
-// 3. 新增動漫到雲端
+// 3. 新增動漫到雲端 (沒填順序自動進待看清單)
 // ========================================
 
 if (addButton) {
     addButton.addEventListener("click", function () {
-        const number = Number(numberInput.value);
+        const numberVal = numberInput.value.trim();
         const title = titleInput.value.trim();
         const rating = Number(ratingInput.value);
         const imageUrl = imageInput.value.trim();
-
-        if (numberInput.value.trim() === "" || isNaN(number) || number <= 0) {
-            alert("請輸入大於 0 的觀看順序（可包含小數）！");
-            return;
-        }
 
         if (!title) {
             alert("請輸入動漫名稱！");
             return;
         }
 
-        if (animeCollection.some(anime => anime.number === number)) {
-            alert("這個觀看順序已經存在！");
+        if (!Number.isInteger(rating) || rating < 0 || rating > 5) {
+            alert("評分必須是 0～5 的整數！");
             return;
         }
 
-        if (!Number.isInteger(rating) || rating < 0 || rating > 5) {
-            alert("評分必須是 0～5 的整數！");
+        // 判斷：如果沒有填寫觀看順序，則存入待看清單 (watchlist)
+        if (numberVal === "") {
+            const watchlistItem = {
+                title: title,
+                rating: rating,
+                image: imageUrl
+            };
+
+            db.collection("watchlist").add(watchlistItem)
+                .then(() => {
+                    numberInput.value = "";
+                    titleInput.value = "";
+                    ratingInput.value = "0";
+                    imageInput.value = "";
+                    alert("已成功加入「待看清單」！");
+                })
+                .catch((error) => {
+                    console.error("加入待看清單失敗：", error);
+                    alert("加入失敗，請稍後再試。");
+                });
+            return;
+        }
+
+        // 有填寫觀看順序的處理邏輯
+        const number = Number(numberVal);
+        if (isNaN(number) || number <= 0) {
+            alert("觀看順序必須是大於 0 的數字！");
+            return;
+        }
+
+        if (animeCollection.some(anime => anime.number === number)) {
+            alert("這個觀看順序已經存在！");
             return;
         }
 
@@ -85,14 +125,13 @@ if (addButton) {
             image: imageUrl
         };
 
-        // 寫入 Firestore 資料庫（雲端）
         db.collection("animes").add(newAnime)
             .then(() => {
                 numberInput.value = "";
                 titleInput.value = "";
                 ratingInput.value = "0";
                 imageInput.value = "";
-                console.log("新增成功！");
+                console.log("新增收藏成功！");
             })
             .catch((error) => {
                 console.error("新增失敗：", error);
@@ -147,8 +186,15 @@ function renderAnimeList() {
             image.style.display = "none";
         }
 
-        const number = document.createElement("p");
-        number.textContent = "觀看順序：" + anime.number;
+        card.appendChild(image);
+
+        // 如果觀看順序是整數，才顯示「觀看順序：X」；如果是小數則完全不建立也不顯示
+        const numVal = Number(anime.number);
+        if (Number.isInteger(numVal)) {
+            const number = document.createElement("p");
+            number.textContent = "觀看順序：" + numVal;
+            card.appendChild(number);
+        }
 
         const title = document.createElement("h3");
         title.textContent = anime.title;
@@ -158,8 +204,6 @@ function renderAnimeList() {
             ? "個人評分：尚未評分"
             : "個人評分：" + "⭐".repeat(anime.rating);
 
-        card.appendChild(image);
-        card.appendChild(number);
         card.appendChild(title);
         card.appendChild(ratingText);
 
@@ -273,27 +317,50 @@ if (clearSearchButton) {
 }
 
 function updateStatistics() {
-    const total = animeCollection.length;
-    const ratedAnime = animeCollection.filter(anime => Number(anime.rating) > 0);
-    const ratedCount = ratedAnime.length;
+    // 收藏總數 = 待看清單數量 + 這頁所有動漫數量
+    const totalCount = watchlistCollection.length + animeCollection.length;
 
-    const average = ratedCount > 0
-        ? ratedAnime.reduce((sum, anime) => sum + Number(anime.rating), 0) / ratedCount
+    // 觀看完作品數（正式收藏中有評分的數量）
+    const watchedAnime = animeCollection.filter(anime => Number(anime.rating) > 0);
+    const watchedCount = watchedAnime.length;
+
+    // 平均評分
+    const average = watchedCount > 0
+        ? watchedAnime.reduce((sum, anime) => sum + Number(anime.rating), 0) / watchedCount
         : 0;
 
-    const highest = ratedCount > 0
-        ? Math.max(...ratedAnime.map(anime => Number(anime.rating)))
-        : 0;
+    // 最多評分（統計 1～5 分中，哪一個星等的作品數量最多）
+    const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    animeCollection.forEach(anime => {
+        const r = Number(anime.rating);
+        if (r >= 1 && r <= 5) {
+            ratingCounts[r]++;
+        }
+    });
+
+    let maxStar = 0;
+    let maxCount = -1;
+    for (let star = 1; star <= 5; star++) {
+        if (ratingCounts[star] > maxCount) {
+            maxCount = ratingCounts[star];
+            maxStar = star;
+        }
+    }
+
+    let topRatingText = "尚無評分";
+    if (maxCount > 0) {
+        topRatingText = `${"⭐".repeat(maxStar)} (${maxCount}部)`;
+    }
 
     const totalElement = document.getElementById("total-anime");
     const ratedElement = document.getElementById("rated-anime");
     const averageElement = document.getElementById("average-rating");
     const highestElement = document.getElementById("highest-rating");
 
-    if (totalElement) totalElement.textContent = total + " 部";
-    if (ratedElement) ratedElement.textContent = ratedCount + " 部";
-    if (averageElement) averageElement.textContent = ratedCount > 0 ? average.toFixed(2) + " ⭐" : "尚無評分";
-    if (highestElement) highestElement.textContent = ratedCount > 0 ? highest + " ⭐" : "尚無評分";
+    if (totalElement) totalElement.textContent = totalCount + " 部";
+    if (ratedElement) ratedElement.textContent = watchedCount + " 部";
+    if (averageElement) averageElement.textContent = watchedCount > 0 ? average.toFixed(2) + " ⭐" : "尚無評分";
+    if (highestElement) highestElement.textContent = topRatingText;
 }
 
 // ========================================
