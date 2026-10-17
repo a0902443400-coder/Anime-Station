@@ -7,7 +7,7 @@
 html {
     scroll-behavior: smooth;
     scroll-padding-top: 80px;
-    background-color: #101019; /* 防止向下太快閃白的核心設定 */
+    background-color: #101019;
 }
 
 body {
@@ -16,7 +16,7 @@ body {
     background:
         radial-gradient(ellipse at top, #252044 0%, transparent 55%),
         linear-gradient(135deg, #101019, #171725 55%, #101019);
-    background-color: #101019; /* 確保底色百分之百密合 */
+    background-color: #101019;
     color: #f2f2ff;
     font-family: "Microsoft JhengHei", Arial, sans-serif;
     line-height: 1.6;
@@ -52,49 +52,91 @@ a {
     color: #b9a1ff;
 }
 
-/* ===== 首頁大型橫幅 ===== */
+/* ===== 首頁大型橫幅 (滿版背景艾莉圖片，完美邊緣漸層過渡) ===== */
 
 .hero {
     min-height: 520px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 80px 20px;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 80px 60px;
+    margin-bottom: 40px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    background-color: #101019;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 50px rgba(16, 16, 25, 0.8);
+    border: 1px solid rgba(142, 117, 232, 0.15);
+}
 
-    background:
-        radial-gradient(ellipse at 50% 20%, #51406f 0%, transparent 60%),
-        linear-gradient(135deg, #24243e, #111119 75%);
+.hero-bg-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.hero-bg-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: right center;
+    display: block;
+}
+
+/* 調整漸層遮罩：將過渡帶拉寬並柔化，使圖片與左側文字區塊完美無縫融合 */
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg, 
+        #101019 12%, 
+        rgba(16, 16, 25, 0.95) 38%, 
+        rgba(16, 16, 25, 0.65) 62%, 
+        rgba(16, 16, 25, 0.2) 85%
+    );
 }
 
 .hero-content {
-    max-width: 800px;
+    max-width: 600px;
+    z-index: 2;
+    position: relative;
 }
 
 .hero-subtitle {
     color: #c7b6ff;
     letter-spacing: 5px;
     font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
 .hero h1 {
     font-size: clamp(36px, 6vw, 64px);
-    margin: 15px 0;
+    margin: 10px 0 15px 0;
     color: #ffffff;
+    line-height: 1.2;
 }
 
 .hero-content > p:not(.hero-subtitle) {
     color: #d0cede;
     font-size: 17px;
+    margin-bottom: 25px;
 }
 
 .hero-button {
     display: inline-block;
-    margin-top: 25px;
     padding: 12px 28px;
     border-radius: 30px;
     background: #9275e8;
     color: white;
+    font-weight: bold;
     transition: transform 0.2s, background 0.2s;
 }
 
@@ -215,8 +257,6 @@ footer {
     font-size: 13px;
 }
 
-/* ===== 選擇檔案按鈕 ===== */
-
 .anime-form input[type="file"]::file-selector-button {
     margin-right: 12px;
     padding: 9px 14px;
@@ -253,8 +293,7 @@ footer {
     box-shadow: 0 6px 18px rgba(141, 107, 232, 0.35);
 }
 
-/* ===== 動漫清單 ===== */
-/* 電腦版：一排 5 個 */
+/* ===== 動漫清單 (電腦版：一排 5 個) ===== */
 
 .anime-list {
     display: grid;
@@ -290,19 +329,17 @@ footer {
     height: 260px;
     object-fit: cover;
     border-radius: 10px;
-    background: #11111b; /* 圖片載入前的深色襯底 */
+    background: #11111b;
     transition: transform 0.35s ease, filter 0.35s ease;
     transform-origin: center;
 }
-
-/* ===== 封面放大效果 ===== */
 
 .anime-card:hover .anime-cover {
     transform: scale(1.05);
     filter: brightness(1.08);
 }
 
-/* ===== 觀看順序 ===== */
+/* ===== 觀看順序與名稱 ===== */
 
 .anime-card p {
     margin: 12px 16px;
@@ -310,8 +347,6 @@ footer {
     font-size: 13px;
     line-height: 1.6;
 }
-
-/* ===== 動漫名稱 ===== */
 
 .anime-card h3 {
     margin: 12px 16px;
@@ -454,13 +489,13 @@ footer {
     background: #49386f;
 }
 
-/* ===== 網頁右下角動漫管理選單 ===== */
+/* ===== 右下角動漫管理選單 ===== */
 
 #management-panel {
     position: fixed;
     right: 24px;
     bottom: 24px;
-    z-index: 9999;
+    z-index: 998;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -485,8 +520,14 @@ footer {
 }
 
 #management-options {
+    display: flex;
     flex-direction: column;
     gap: 8px;
+    background: #171724;
+    border: 1px solid #37334f;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 #management-options button {
@@ -508,15 +549,13 @@ footer {
     border-color: #754453;
 }
 
-/* ===== 平板版 ===== */
+/* ===== 平板與手機版響應式調整 ===== */
 
 @media (max-width: 1100px) {
     .anime-list {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
-
-/* ===== 手機版 ===== */
 
 @media (max-width: 800px) {
     .anime-form {
@@ -532,8 +571,6 @@ footer {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
-
-/* ===== 小手機版 ===== */
 
 @media (max-width: 450px) {
     body {

@@ -21,8 +21,12 @@
         <a href="random.html">隨機抽籤</a>
     </nav>
 
-    <!-- 大型首頁橫幅 -->
+    <!-- 大型首頁橫幅 (使用 img 標籤引入艾莉圖片，解決跨來源問題) -->
     <header id="home" class="hero">
+        <div class="hero-bg-wrapper">
+            <img src="https://m.media-amazon.com/images/S/pv-target-images/27281d0453394bd369dc2c7faf09bfc0e554139b1b5359e5f24831328b70b4bc.jpg" alt="艾莉同學背景圖" class="hero-bg-img">
+            <div class="hero-overlay"></div>
+        </div>
         <div class="hero-content">
             <p class="hero-subtitle">MY ANIME COLLECTION</p>
             <h1>我的動漫收藏庫</h1>
@@ -57,7 +61,7 @@
                     <p>查看還沒排順序的想看作品</p>
                 </a>
 
-                <!-- 新增的隨機抽籤卡片 -->
+                <!-- 隨機抽籤卡片 -->
                 <a href="random.html" class="menu-card">
                     <span>🎲</span>
                     <h3>隨機抽籤</h3>
@@ -71,7 +75,6 @@
             <h2>🎌 動漫收藏</h2>
 
             <div class="anime-form">
-                <!-- 觀看順序改為非必填，沒填就進待看清單 -->
                 <input type="number" id="anime-number" placeholder="觀看順序 " min="0" step="any">
                 <input type="text" id="anime-title" placeholder="動漫名稱，例如：刀劍神域">
                 <input type="url" id="anime-image" placeholder="請輸入圖片網址 (https://...)">
